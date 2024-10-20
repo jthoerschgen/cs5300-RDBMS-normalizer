@@ -2,7 +2,7 @@
 
 
 class Dependency:
-    """Representation of a dependency
+    """Representation of a dependency.
 
     Attributes:
         lhs (set[str]): Left-hand side of the dependency.
@@ -10,7 +10,7 @@ class Dependency:
     """
 
     def __init__(self, lhs: set[str], rhs: set[str]):
-        """The constructor for FD
+        """The constructor for a dependency.
 
         Args:
             lhs (set[str]): The attributes that comprise the left-hand side
@@ -21,14 +21,11 @@ class Dependency:
         self.lhs: set[str] = lhs.copy()
         self.rhs: set[str] = rhs.copy()
 
-    def __repr__(self) -> str:
-        """Representation method for a Dependency.
+    def __repr__(self) -> NotImplementedError:
+        """Representation method for a Dependency object.
 
         Raises:
             NotImplementedError: Implement method for each kind of dependency.
-
-        Returns:
-            str: The string representation of a FD.
         """
         raise NotImplementedError
 
@@ -55,25 +52,23 @@ class FD(Dependency):
 
 
 class MVD(Dependency):
-    """Representation of a multivalued dependency
+    """Representation of a multivalued dependency.
 
     Definition:
         A multivalued dependency X → Y specified on relation schema R, where X
         and Y are both subsets of R, specifies the following constraint on any
-        relation state r of R:
+        relation state r of R: If two tuples t1 and t2 exist in r such that
+        t1[X] = t2[X], then two tuples t3 and t4 should also exist in r with
+        the following properties*, where we use Z to denote (R - (X U Y)):**
 
-            If two tuples t1 and t2 exist in r such that t1[X] = t2[X], then
-            two tuples t3 and t4 should also exist in r with the following
-            properties*, where we use Z to denote (R - (X U Y)):**
+            -   t3[X] = t4[X] = t1[X] = t2[X]
+            -   t3[Y] = t1[Y] and t4[Y] = t2[Y]
+            -   t3[Z] = t2[Z] and t4[Z] = t1[Z]
 
-        -   t3[X] = t4[X] = t1[X] = t2[X]
-        -   t3[Y] = t1[Y] and t4[Y] = t2[Y]
-        -   t3[Z] = t2[Z] and t4[Z] = t1[Z]
-
-
-        (*  The tuples t1, t2, t3 , and t4 are not necessarily distinct.)
-        (** Z is shorthand for the attributes in R after the attributes in
-            (X U Y) are removed from R.)
+    Notes:
+        -   *The tuples t1, t2, t3 , and t4 are not necessarily distinct.
+        -   **Z is shorthand for the attributes in R after the attributes in
+            (X U Y) are removed from R.
 
     """
 

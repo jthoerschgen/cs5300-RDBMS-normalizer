@@ -2,7 +2,7 @@
 
 """rdbms_normalizer.py
 
-CS 5300 - Programming Project - RDBMS Normalizer
+CS 5300 - Programming Project - RDBMS Normalizer.
 
 Core Components:
 
@@ -17,17 +17,17 @@ from objects.relation import Relation
 
 
 def normalize_to_1NF(relation: Relation) -> list[Relation]:
-    """Normalize a Relation into First Normal Form (1NF)
+    """Normalize a Relation into First Normal Form (1NF).
 
     First Normal Form:
 
-    Test
+    Test:
         -   Relation should have no multivalued attributes.
 
-    Remedy
+    Remedy:
         -   Form new relations for each multi-valued attribute.
 
-    Approach
+    Approach:
         -   Create a separate relation for each multivalued attribute
             along with the primary key of the base relation.
 
@@ -61,22 +61,22 @@ def normalize_to_1NF(relation: Relation) -> list[Relation]:
 
 
 def normalize_to_2NF(relation: Relation) -> list[Relation]:
-    """Normalize a Relation into Second Normal Form (2NF)
+    """Normalize a Relation into Second Normal Form (2NF).
 
     Second Normal Form:
 
-    Test
+    Test:
         -   For relations where the primary key contains multiple
             attributes, no non-key attributes should be functionally
             dependent on a part of the primary key.
 
-    Remedy
+    Remedy:
         -   Decompose and set up a new relation for each partial key with
             its dependent attributes(s). Make sure to keep a relation with
             the original primary key and any attributes that are fully
             functionally dependent on it.
 
-    Approach
+    Approach:
         -   Create a separate relation for each partial functional
             dependency violation against the keys of the base relation.
 
@@ -89,7 +89,7 @@ def normalize_to_2NF(relation: Relation) -> list[Relation]:
             list of relations in 2NF.
     """
 
-    """Definition of a Partial Functional Dependency
+    """Definition of a Partial Functional Dependency:
 
         Partial Functional Dependency (PFD):
             -   A functional dependency X → Y is a partial dependency if some
@@ -148,22 +148,22 @@ def normalize_to_2NF(relation: Relation) -> list[Relation]:
 
 
 def normalize_to_3NF(relation: Relation) -> list[Relation]:
-    """Normalize a Relation into Third Normal Form (3NF)
+    """Normalize a Relation into Third Normal Form (3NF).
 
     Third Normal Form:
 
-    Test
+    Test:
         -   Relation should not have a non-key attribute functionally
             determined by another non-key attribute (or by a set of
             non-key attributes). That is, there should be no transitive
             dependency of a non-key attribute on the primary key.
 
-    Remedy
+    Remedy:
         -   Decompose and set up a relation that includes the non-key
             attribute(s) that functionally determine(s) other non-key
             attribute(s).
 
-    Approach
+    Approach:
         -   Create a separate relation for each transitive functional
             dependency violation against the keys of the base relation.
 
@@ -176,7 +176,7 @@ def normalize_to_3NF(relation: Relation) -> list[Relation]:
             list of relations in 3NF.
     """
 
-    """Definition of a Transitive Functional Dependency
+    """Definition of a Transitive Functional Dependency:
 
         Transitive Functional Dependency (TFD):
             -   A functional dependency X → Y in a relation schema R is a
@@ -230,22 +230,22 @@ def normalize_to_3NF(relation: Relation) -> list[Relation]:
 
 
 def normalize_to_BCNF(relation: Relation) -> list[Relation]:
-    """Normalize a Relation into Boyce-Codd Normal Form (3NF)
+    """Normalize a Relation into Boyce-Codd Normal Form (3NF).
 
     Boyce-Codd Normal Form:
 
-    Definition
+    Definition:
         -   A relation schema R is in BCNF if whenever a nontrivial
             functional dependency X → A holds in R, then X is a superkey
             of R.
 
-    General rule
+    General rule:
         1.  Let R be the relation not in BCNF, let X ⊆ R, and let X → A be
             the FD that causes a violation of BCNF. R may be decomposed
-            into two relations: R-A and XA
+            into two relations: R-A and XA.
         2.  If either R-A or XA is not in BCNF, repeat the process.
 
-    Approach
+    Approach:
         -   Approach: Create a separate relation for each BCNF functional
             dependency violation against the keys of the base relation.
 
@@ -321,26 +321,27 @@ def normalize_to_BCNF(relation: Relation) -> list[Relation]:
 
 
 def normalize_to_4NF(relation: Relation) -> list[Relation]:
-    """Normalize a Relation into Fourth Normal Form (4NF)
+    """Normalize a Relation into Fourth Normal Form (4NF).
 
     Fourth Normal Form:
 
-    Definition
+    Definition:
         -   A relation schema R is in 4NF with respect to a set of
             dependencies F (that includes functional dependencies and
             multivalued dependencies) if, for every nontrivial multivalued
             dependency X →→ Y in F+ *, X is a superkey for R.
 
-            (*  F+ refers to the cover of functional dependencies F, or all
-                dependencies that are implied by F.)
+    Note:
+        -   *F+ refers to the cover of functional dependencies F, or all
+            dependencies that are implied by F.
 
-    General rule
+    General rule:
         -   The process of normalizing a relation involving the nontrivial
             MVDs that is not in 4NF consists of decomposing it so that each
             MVD is represented by a separate relation where it becomes a
             trivial MVD.
 
-    Approach
+    Approach:
         -   Create a separate relation for each MVD violation.
 
     Args:
@@ -356,24 +357,25 @@ def normalize_to_4NF(relation: Relation) -> list[Relation]:
 
 
 def normalize_to_5NF(relation: Relation) -> list[Relation]:
-    """Normalize a Relation into Fifth Normal Form (5NF)
+    """Normalize a Relation into Fifth Normal Form (5NF).
 
     Fifth Normal Form:
 
-    Definition
+    Definition:
         -   A relation schema R is in fifth normal form (5NF) (or project-join
             normal form (PJNF)) with respect to a set F of functional,
             multivalued, and join dependencies if, for every nontrivial join
             dependency JD(R1, R2, … , Rn) in F+ (that is, implied by F),*
             every R_i is a superkey of R.
 
-            (*  F+ refers to the cover of functional dependencies F, or all
-                dependencies that are implied by F.)
+    Note:
+        -   *F+ refers to the cover of functional dependencies F, or all
+            dependencies that are implied by F.)
 
-    General rule
+    General rule:
         - TODO
 
-    Approach
+    Approach:
         -   Decompose each base relation into its sub-relation projection if a
             non-trivial join dependency is identified.
 
@@ -386,7 +388,7 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
             list of relations in 5NF.
     """
 
-    """Definition of a Join Dependency
+    """Definition of a Join Dependency:
 
         Join Dependency (JD):
             -   A join dependency (JD), denoted by JD(R1 , R2 , … , R n),
@@ -395,7 +397,7 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
                 of R should have a nonadditive join decomposition into R1, R2,
                 … , Rn. Hence, for every such r we have:
 
-                * (π_R1(r), π_R2(r), … , π_Rn(r)) = r
+                    * (π_R1(r), π_R2(r), … , π_Rn(r)) = r
     """
 
     ...

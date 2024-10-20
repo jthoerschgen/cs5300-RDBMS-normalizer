@@ -19,7 +19,7 @@ class Relation:
             dependencies of the relation.
 
     TODO:
-        Add representation for foreign keys
+        Add representation for foreign keys.
     """
 
     def __init__(
@@ -240,15 +240,15 @@ class Relation:
         We can formally define a set of functional dependencies F to be
         minimal if it satisfies the following conditions:
 
-            1.  Every dependency in F has a single attribute for its
-                right-hand side.
+        1.  Every dependency in F has a single attribute for its
+            right-hand side.
 
-            2.  We cannot replace any dependency X → A in F with a dependency
-                Y → A, where Y is a proper subset of X, and still have a set
-                of dependencies that is equivalent to F.
+        2.  We cannot replace any dependency X → A in F with a dependency
+            Y → A, where Y is a proper subset of X, and still have a set
+            of dependencies that is equivalent to F.
 
-            3.  We cannot remove any dependency from F and still have a set of
-                dependencies that is equivalent to F."""
+        3.  We cannot remove any dependency from F and still have a set of
+            dependencies that is equivalent to F."""
 
         # Satisfy Step 1
         minimal_functional_dependencies: set[FD] = set()
@@ -276,7 +276,6 @@ class Relation:
         """Prime Attributes for the Relation.
 
         Definition:
-
             An attribute of relation schema R is called a prime attribute of R
             if it is a member of some candidate key of R. An attribute is
             called nonprime if it is not a prime attribute — that is, if it is

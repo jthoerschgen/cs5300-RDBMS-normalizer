@@ -5,7 +5,7 @@
 Test the different normalization functions on examples from the textbook and
 compare them to the correct result.
 
-Textbook: `Fundamentals of Database Systems` (Elmasri, Navathe)
+Textbook: `Fundamentals of Database Systems` (Elmasri, Navathe).
 
 """
 
@@ -94,6 +94,7 @@ def run_tests():
         print(relation)
         print(".." * 20)
     print()
+
     # 2NF
     print("~=" * 20)
     print("TESTING SECOND NORMAL FORM")
@@ -112,6 +113,7 @@ def run_tests():
         print(relation)
         print(".." * 20)
     print()
+
     # 3NF
     print("~=" * 20)
     print("TESTING THIRD NORMAL FORM")
@@ -130,6 +132,7 @@ def run_tests():
         print(relation)
         print(".." * 20)
     print()
+
     # BCNF
     print("~=" * 20)
     print("TESTING BOYCE-CODD NORMAL FORM")
