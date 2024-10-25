@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import pandas as pd
+
 from .fd import FD, MVD
 
 
@@ -17,6 +19,8 @@ class Relation:
             dependencies of the relation.
         multivalued_dependencies (set[MV]): The set of the multivalued
             dependencies of the relation.
+        data_instances (pd.DataFrame) | None: The data instances for the
+            relation, used for 4NF and 5NF normalization. (Optional)
 
     TODO:
         Add representation for foreign keys.
@@ -31,6 +35,7 @@ class Relation:
         non_atomic_columns: set[str] = set(),
         functional_dependencies: set[FD] = set(),
         multivalued_dependencies: set[MVD] = set(),
+        data_instances: list[dict[str, str]] | pd.DataFrame | None = None,
     ):
         """The constructor for Relation.
 
@@ -48,6 +53,11 @@ class Relation:
                 functional dependencies of the relation. Defaults to set().
             multivalued_dependencies (set[MVD], optional): The set of the
                 multivalued dependencies of the relation. Defaults to set().
+            data_instances (list[dict[str, str]] | pd.DataFrame | None,
+                optional): Optional parameter for specifying a list of data
+                instances, where each instance is a dictionary where the key
+                is the column name and the value is the column value for that
+                row. Defaults to None.
         """
 
         # Data Validation
@@ -84,6 +94,13 @@ class Relation:
                     attribute in columns
                 ), f"Attribute {attribute} from MVD, {mvd} not in columns"
 
+        if data_instances is not None:
+            if isinstance(data_instances, dict):
+                for row in data_instances:
+                    assert set(row.keys()) == columns
+            elif isinstance(data_instances, pd.DataFrame):
+                assert set(data_instances.columns) == columns
+
         # Add the Primary Key Functional Dependency
 
         # if columns:
@@ -106,6 +123,11 @@ class Relation:
             for mvd in multivalued_dependencies.copy()
             if mvd.lhs or mvd.rhs
         }
+        self.data_instances: pd.DataFrame = (
+            pd.DataFrame(data_instances)
+            if data_instances is not None
+            else None
+        )
 
     def _repr_attribute_list(
         self, attribute: set, attribute_title: str
@@ -157,6 +179,12 @@ class Relation:
                 ),
                 self._repr_attribute_list(
                     self.multivalued_dependencies, "Multivalued Dependencies"
+                ),
+                "Data Instances:\n",
+                (
+                    self.data_instances.to_string()
+                    if self.data_instances is not None
+                    else ""
                 ),
             )
         )
@@ -230,6 +258,9 @@ class Relation:
                 updated_multivalued_dependencies.add(mvd)
         self.multivalued_dependencies = updated_multivalued_dependencies.copy()
 
+        if self.data_instances is not None:
+            self.data_instances.drop(attribute, axis=1)
+
         self.columns.remove(attribute)
 
         return
@@ -291,3 +322,61 @@ class Relation:
             prime_attributes = prime_attributes | candidate_key
 
         return prime_attributes
+
+    def verify_mvd(self, mvd: MVD) -> bool:
+        """Definition of a Multivalued Dependency:
+
+        Multivalued Dependency (MVD):
+
+            -   A multivalued dependency X → Y specified on relation schema R,
+                where X and Y are both subsets of R, specifies the following
+                constraint on any relation state r of R: If two tuples t1 and
+                t2 exist in r such that t1[X] = t2[X], then two tuples t3 and
+                t4 should also exist in r with the following properties*,
+                where we use Z to denote (R - (X U Y)):**
+
+                -   t3[X] = t4[X] = t1[X] = t2[X]
+                -   t3[Y] = t1[Y] and t4[Y] = t2[Y]
+                -   t3[Z] = t2[Z] and t4[Z] = t1[Z]
+
+        Notes:
+            -   *The tuples t1, t2, t3 , and t4 are not necessarily distinct.
+            -   **Z is shorthand for the attributes in R after the attributes
+                in (X U Y) are removed from R.
+        """
+        # assert (
+        #     mvd.lhs | mvd.rhs
+        # ) in self.columns, "Attributes in MVD not in columns."
+
+        print(f"MVD: {mvd}")
+
+        X = mvd.lhs.copy()
+        Y, Z = mvd.rhs
+
+        for name, group in self.data_instances.groupby(list(X)):
+            for i1, t1 in group.iterrows():  # Index 1, Tuple 1
+                for i2, t2 in group.iterrows():  # Index 2, Tuple 2
+                    if i1 == i2:
+                        continue
+                    y1 = t1[Y]
+                    z1 = t1[Z]
+
+                    y2 = t2[Y]
+                    z2 = t2[Z]
+
+                    # Check for t3
+                    possible_t3s = group[(group[Y] == y1) & (group[Z] == z2)]
+
+                    # Check for t4
+                    possible_t4s = group[(group[Y] == y2) & (group[Z] == z1)]
+
+                    exists_t3 = not possible_t3s.empty
+                    exists_t4 = not possible_t4s.empty
+
+                    if not (exists_t3 and exists_t4):
+                        return False
+        return True
+
+    def determine_mvds(self) -> set[MVD]:
+        """TODO EXTRA CREDIT"""
+        raise NotImplementedError("EXTRA CREDIT")

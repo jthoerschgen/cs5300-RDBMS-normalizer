@@ -81,4 +81,6 @@ class MVD(Dependency):
         Returns:
             str: The string representation of a FD.
         """
-        return f"{self.lhs} -> " + (" | ".join(self.rhs) if self.rhs else "{}")
+        return f"{self.lhs} ->> " + (
+            " | ".join(self.rhs) if self.rhs else "{}"
+        )

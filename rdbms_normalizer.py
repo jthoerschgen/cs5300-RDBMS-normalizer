@@ -11,6 +11,9 @@ Core Components:
 3. Final Relation Generator
 
 """
+from itertools import combinations
+
+import pandas as pd
 
 from objects.fd import FD
 from objects.relation import Relation
@@ -43,18 +46,23 @@ def normalize_to_1NF(relation: Relation) -> list[Relation]:
     decomposition: list[Relation] = []
     non_atomic_columns: set[str] = relation.non_atomic_columns.copy()
     for attribute in non_atomic_columns:
-        new_primary_key: set[str] = relation.primary_key.copy()
-        new_primary_key.add(attribute)
-
-        relation.remove_attribute(attribute)
+        columns: set[str] = relation.primary_key.copy()
+        columns.add(attribute)
 
         decomposed_relation = Relation(
-            name=f"{relation.name.rstrip('Data')}{attribute}Data",
-            columns=new_primary_key,
-            primary_key=new_primary_key,
-            functional_dependencies=set(),
+            name="",  # TODO: name
+            columns=columns,
+            primary_key=columns,
+            # TODO: candidate keys
+            functional_dependencies={
+                fd
+                for fd in relation.functional_dependencies
+                if fd.lhs <= columns and fd.rhs <= columns
+            },
         )
         decomposition.append(decomposed_relation)
+
+        relation.remove_attribute(attribute)
     decomposition.append(relation)
 
     return decomposition
@@ -122,26 +130,30 @@ def normalize_to_2NF(relation: Relation) -> list[Relation]:
     decomposition: list[Relation] = []
     for pfd in pfds:
         print(f"PFD: {pfd}")
-        new_primary_key: set[str] = (pfd.lhs | pfd.rhs).intersection(
+        decomposition_pk: set[str] = (pfd.lhs | pfd.rhs).intersection(
             relation.primary_key
         )
+        decomposition_columns: set[str] = pfd.lhs | pfd.rhs
+        decomposition_fds: set[str] = {
+            fd
+            for fd in relation.functional_dependencies
+            if fd.lhs <= decomposition_columns
+            and fd.rhs <= decomposition_columns
+        }
+
+        decomposed_relation = Relation(
+            name="",  # TODO: name
+            columns=decomposition_columns,
+            primary_key=decomposition_pk,
+            # TODO: candidate keys
+            functional_dependencies=({pfd} | decomposition_fds),
+        )
+        decomposition.append(decomposed_relation)
 
         for attribute in pfd.rhs:
             if attribute not in relation.columns:
                 continue  # already removed
             relation.remove_attribute(attribute)
-
-        decomposed_relation = Relation(
-            name=(
-                relation.name.rstrip("Data")
-                + "".join([column.rstrip("ID") for column in new_primary_key])
-                + "Data"
-            ),
-            columns=pfd.lhs | pfd.rhs,
-            primary_key=new_primary_key,
-            functional_dependencies={pfd},
-        )
-        decomposition.append(decomposed_relation)
     decomposition.append(relation)
 
     return decomposition
@@ -206,24 +218,28 @@ def normalize_to_3NF(relation: Relation) -> list[Relation]:
     decomposition: list[Relation] = []
     for tfd in tfd_violations:
         print(f"TFD: {tfd}")
-        new_primary_key: set[str] = tfd.lhs.copy()
+        decomposition_pk: set[str] = tfd.lhs.copy()
+        decomposition_columns: set[str] = tfd.lhs | tfd.rhs
+        decomposition_fds: set[str] = {
+            fd
+            for fd in relation.functional_dependencies
+            if fd.lhs <= decomposition_columns
+            and fd.rhs <= decomposition_columns
+        }
+
+        decomposed_relation = Relation(
+            name="",  # TODO: name
+            columns=decomposition_columns,
+            primary_key=decomposition_pk,
+            # TODO: candidate keys
+            functional_dependencies=({tfd} | decomposition_fds),
+        )
+        decomposition.append(decomposed_relation)
 
         for attribute in tfd.rhs:
             if attribute not in relation.columns:
                 continue  # already removed
             relation.remove_attribute(attribute)
-
-        decomposed_relation = Relation(
-            name=(
-                relation.name.rstrip("Data")
-                + "".join([column.rstrip("ID") for column in new_primary_key])
-                + "Data"
-            ),
-            columns=tfd.lhs | tfd.rhs,
-            primary_key=new_primary_key,
-            functional_dependencies={tfd},
-        )
-        decomposition.append(decomposed_relation)
     decomposition.append(relation)
 
     return decomposition
@@ -278,31 +294,32 @@ def normalize_to_BCNF(relation: Relation) -> list[Relation]:
     for bcnf_violation in bncf_violations:
         print(f"BCNF Violation: {bcnf_violation}")
 
-        new_primary_key: set[str] = bcnf_violation.lhs.copy()
+        decomposition_pk: set[str] = bcnf_violation.lhs.copy()
+        decomposition_columns: set[str] = (
+            bcnf_violation.lhs | bcnf_violation.rhs
+        )
+        decomposition_fds: set[str] = {
+            fd
+            for fd in relation.functional_dependencies
+            if fd.lhs <= decomposition_columns
+            and fd.rhs <= decomposition_columns
+        }
+
+        # New relation XA
+        decomposed_relation = Relation(
+            name="",  # TODO: name
+            columns=decomposition_columns,
+            primary_key=decomposition_pk,
+            # TODO: candidate keys
+            functional_dependencies=({bcnf_violation} | decomposition_fds),
+        )
+        decomposition.append(decomposed_relation)
 
         # R becomes R-A
         for attribute in bcnf_violation.rhs:
             if attribute not in relation.columns:
                 continue  # already removed
             relation.remove_attribute(attribute)
-
-        # New relation XA
-        decomposed_relation = Relation(
-            name=(
-                relation.name.rstrip("Data")
-                + "".join([column.rstrip("ID") for column in new_primary_key])
-                + "Data"
-            ),
-            columns=bcnf_violation.lhs | bcnf_violation.rhs,
-            primary_key=new_primary_key,
-            functional_dependencies={
-                fd
-                for fd in relation.minimal_fd_set()
-                if (fd.lhs == bcnf_violation.lhs)
-                and (fd.rhs == bcnf_violation.rhs)
-            },
-        )
-        decomposition.append(decomposed_relation)
 
     # Adjust the remaining original relation's primary key
     for attribute in (
@@ -344,6 +361,16 @@ def normalize_to_4NF(relation: Relation) -> list[Relation]:
     Approach:
         -   Create a separate relation for each MVD violation.
 
+    Instructor Note:
+        -   You may assume that MVDs are provided by the user, detailing the
+            expected independent relationships between attribute groups.
+        -   Data instances are REQUIRED ONLY on the relations where MVDs are
+            provided by the user.
+        -   Your program must validate these provided MVDs against the actual
+            data instances. If and only if upon successful validation of the
+            MVDs, your program should then perform the necessary decomposition
+            of the relation schema to achieve 4NF.
+
     Args:
         relation (Relation): Relation that is being normalized into the Fourth
             Normal Form.
@@ -353,7 +380,46 @@ def normalize_to_4NF(relation: Relation) -> list[Relation]:
             list of relations in 4NF.
     """
 
-    ...
+    # TODO - Determine MVDs for Extra Credit
+
+    decomposition: list[Relation] = []
+    for mvd in relation.multivalued_dependencies:
+        print(f"MVD: {mvd}")
+
+        if not relation.verify_mvd(mvd):
+            print("\tMVD is invalid, skipping...")
+            continue
+        print("\tMVD is valid, decomposing...")
+
+        # Decompose the Relation
+        for rhs_attribute in mvd.rhs:
+            decomposition_pk: set[str] = mvd.lhs | {rhs_attribute}
+            decomposition_columns: set[str] = mvd.lhs | {rhs_attribute}
+
+            # Decompose the Data Instance
+            decomposition_data_instances = (
+                relation.data_instances[
+                    list(decomposition_columns)
+                ].drop_duplicates()
+                if relation.data_instances is not None
+                else None
+            )
+
+            decomposed_relation = Relation(
+                name="",  # TODO: name
+                columns=decomposition_columns,
+                primary_key=decomposition_pk,
+                # TODO: candidate keys
+                # TODO: functional_dependencies
+                # TODO: multivalued dependencies
+                data_instances=(decomposition_data_instances),
+            )
+            decomposition.append(decomposed_relation)
+
+        #     relation.remove_attribute(rhs_attribute),
+        # decomposition.append(relation)
+
+    return decomposition
 
 
 def normalize_to_5NF(relation: Relation) -> list[Relation]:
@@ -372,12 +438,17 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
         -   *F+ refers to the cover of functional dependencies F, or all
             dependencies that are implied by F.)
 
-    General rule:
-        - TODO
-
     Approach:
         -   Decompose each base relation into its sub-relation projection if a
             non-trivial join dependency is identified.
+        -   Decompose the base relation if a valid join dependency is detected.
+
+    Instructor Note:
+        -   This advanced form of normalization aims to eliminate redundancy
+            caused by join dependencies that are not implied by candidate keys.
+            You will likely need detailed data instances as part of the user
+            input in order to effectively determine any existing join
+            dependencies within the relation table.
 
     Args:
         relation (Relation): Relation that is being normalized into the Fifth
@@ -391,13 +462,142 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
     """Definition of a Join Dependency:
 
         Join Dependency (JD):
-            -   A join dependency (JD), denoted by JD(R1 , R2 , … , R n),
+            -   A join dependency (JD), denoted by JD(R1 , R2 , ... , R n),
                 specified on relation schema R, specifies a constraint on the
                 states r of R. The constraint states that every legal state r
                 of R should have a nonadditive join decomposition into R1, R2,
                 … , Rn. Hence, for every such r we have:
 
-                    * (π_R1(r), π_R2(r), … , π_Rn(r)) = r
+                    * (π_R1(r), π_R2(r), ... , π_Rn(r)) = r
     """
 
-    ...
+    # Get a list of the combination of every prime attribute
+    prime_attribute_combinations = list()
+    prime_key_list = list(relation.primary_key)
+    for i in range(2, len(prime_key_list) + 1):
+        for combination in combinations(prime_key_list, i):
+            prime_attribute_combinations.append(set(combination))
+
+    # Get all unique decompositions
+    decompositions = []
+    for prime_attribute_combination in prime_attribute_combinations:
+        r1_projection = relation.data_instances[
+            list(prime_attribute_combination)
+        ].drop_duplicates()
+        r1_projection = r1_projection.reindex(
+            sorted(r1_projection.columns), axis=1
+        )
+
+        for prime_attribute in prime_attribute_combination:
+            remainder = (
+                relation.primary_key - prime_attribute_combination
+            ) | {prime_attribute}
+            if len(prime_attribute_combination) == 1 or len(remainder) == 1:
+                continue
+            if (
+                prime_attribute_combinations == relation.primary_key
+                or remainder == relation.primary_key
+            ):
+                continue  # Trivial
+
+            r2_projection = relation.data_instances[
+                list(remainder)
+            ].drop_duplicates()
+            r2_projection = r2_projection.reindex(
+                sorted(r2_projection.columns), axis=1
+            )
+
+            # Check if the projection with the same columns is already in the
+            # decompositions
+            if not any(
+                set(r1_projection.columns) == set(decomposition.columns)
+                for decomposition in decompositions
+            ):
+                decompositions.append(r1_projection)
+
+            if not any(
+                set(r2_projection.columns) == set(decomposition.columns)
+                for decomposition in decompositions
+            ):
+                decompositions.append(r2_projection)
+
+    # Check for Join Dependencies
+    original_df = relation.data_instances.reindex(
+        sorted(relation.data_instances.columns), axis=1
+    )
+    original_df = original_df.sort_values(
+        by=list(original_df.columns)
+    ).reset_index(drop=True)
+    decomposition_columns: set[tuple[tuple[str, ...]]] = set()
+
+    print("Verifying Join Dependencies....")
+    for i in range(2, len(decompositions) + 1):
+        for combination in combinations(decompositions, i):
+
+            join_df = combination[0]
+            for table in combination[1:]:
+                common_columns = list(
+                    set(table.columns) & set(join_df.columns)
+                )
+                if common_columns:
+                    join_df = pd.merge(
+                        join_df, table, on=common_columns, how="inner"
+                    )
+
+            join_df = join_df.reindex(sorted(join_df.columns), axis=1)
+
+            join_df = join_df.sort_values(
+                by=list(join_df.columns)
+            ).reset_index(drop=True)
+
+            valid_join = original_df.equals(join_df)
+
+            if valid_join:
+                h = set()
+                for table in combination:
+                    h.add(tuple(table.columns))
+                decomposition_columns.add(tuple(h))
+
+    if len(decomposition_columns) == 0:
+        return [relation]
+
+    least_number_columns: int = min(
+        sum(len(columns) for columns in decomposition)
+        for decomposition in decomposition_columns
+    )  # Decompositions with the least amount of columns
+    decomposition_columns = {
+        decomposition
+        for decomposition in decomposition_columns
+        if sum(len(columns) for columns in decomposition)
+        == least_number_columns
+    }
+    print(decomposition_columns)
+
+    decomposition: list[Relation] = []
+    for decomposition_columns in decomposition_columns.pop():
+        # Construct the Decomposition
+
+        decomposition_pk: set[str] = set(decomposition_columns)
+        decomposition_columns: set[str] = set(decomposition_columns)
+
+        # Decompose the Data Instance
+        decomposition_data_instances = (
+            relation.data_instances[
+                list(decomposition_columns)
+            ].drop_duplicates()
+            if relation.data_instances is not None
+            else None
+        )
+
+        decomposed_relation = Relation(
+            name="",  # TODO: name
+            columns=decomposition_columns,
+            primary_key=decomposition_pk,
+            # TODO: candidate keys
+            # TODO: functional_dependencies
+            # TODO: multivalued dependencies
+            data_instances=decomposition_data_instances,
+        )
+        decomposition.append(decomposed_relation)
+
+    return decomposition
