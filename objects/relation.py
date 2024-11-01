@@ -368,8 +368,6 @@ class Relation:
             mvd.lhs | mvd.rhs[0] | mvd.rhs[1]
         ) <= self.columns, f"Attributes in MVD not in columns: {self.columns}"
 
-        print(f"MVD: {mvd}")
-
         X = mvd.lhs.copy()
         Y, Z = mvd.rhs
 

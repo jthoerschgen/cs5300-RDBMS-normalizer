@@ -806,6 +806,15 @@ def Normalizer(relation_to_normalize: Relation, normalize_to: str):
     for relation_1NF in decomposition_1NF:
         decomposition_2NF.extend(normalize_to_2NF(relation_1NF))
 
+    # 2NF - Remove relations already represented by other relations.
+    for i, relation_2NF in enumerate(decomposition_2NF):
+        for j, other_relation_2NF in enumerate(decomposition_2NF):
+            if i == j:
+                continue
+            if relation_2NF.columns <= other_relation_2NF.columns:
+                decomposition_2NF.remove(relation_2NF)
+                break
+
     if normalize_to == "2NF":
         print("=" * 40)
         print("DECOMPOSITION FOR SECOND NORMAL FORM:")
@@ -881,7 +890,6 @@ def Normalizer(relation_to_normalize: Relation, normalize_to: str):
             if i == j:
                 continue
             if relation_4NF.columns <= other_relation_4NF.columns:
-                # if relation_4NF in decomposition_4NF:
                 decomposition_4NF.remove(relation_4NF)
                 break
 

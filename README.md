@@ -14,6 +14,12 @@
 
 - corrected, is a PFD violation
 
+## How To
+
+For decomposing a schema, input an un-normalized relation (type `objects.Relation`) into `rdbms_nomalizer.Normalizer()` and enter the highest desired normal form into the prompt.
+
+For testing run `testing.py` to view individual unit tests for verifying any changes to the code.
+
 ## Objective
 
 To develop a program that takes a database (relations) and functional dependencies as input, normalizes the relations based on the provided functional dependencies, produces SQL queries to generate the normalized database tables, and optionally determines the highest normal form of the input table.

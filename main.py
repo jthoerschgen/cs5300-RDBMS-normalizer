@@ -266,7 +266,7 @@ CoffeeShopDataStandard = Relation(
         FD(
             lhs={"CustomerID"},
             rhs={"CustomerName"},
-        ),
+        ),  # TFD Violation
         FD(
             lhs={"DrinkID"},
             rhs={"DrinkName"},
