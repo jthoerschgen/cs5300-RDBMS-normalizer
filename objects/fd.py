@@ -1,16 +1,8 @@
-# -*- coding: utf-8 -*-
-
-
-class Dependency:
-    """Representation of a dependency.
-
-    Attributes:
-        lhs (set[str]): Left-hand side of the dependency.
-        rhs (set[str]): Right-hand side of the dependency.
-    """
+class FD:
+    """Representation of a functional dependency"""
 
     def __init__(self, lhs: set[str], rhs: set[str]):
-        """The constructor for a dependency.
+        """The constructor for a functional dependency.
 
         Args:
             lhs (set[str]): The attributes that comprise the left-hand side
@@ -21,27 +13,6 @@ class Dependency:
         self.lhs: set[str] = lhs.copy()
         self.rhs: set[str] = rhs.copy()
 
-    def __repr__(self) -> NotImplementedError:
-        """Representation method for a Dependency object.
-
-        Raises:
-            NotImplementedError: Implement method for each kind of dependency.
-        """
-        raise NotImplementedError
-
-    def __eq__(self, other):
-        return self.lhs == other.lhs and self.rhs == other.rhs
-
-    def __hash__(self):
-        return hash((frozenset(self.lhs), frozenset(self.rhs)))
-
-
-class FD(Dependency):
-    """Representation of a functional dependency"""
-
-    def __init__(self, lhs: set[str], rhs: set[str]):
-        super().__init__(lhs, rhs)
-
     def __repr__(self) -> str:
         """Representation method for the FD class.
 
@@ -50,8 +21,14 @@ class FD(Dependency):
         """
         return f"{self.lhs} -> " + (", ".join(self.rhs) if self.rhs else "{}")
 
+    def __eq__(self, other):
+        return self.lhs == other.lhs and self.rhs == other.rhs
 
-class MVD(Dependency):
+    def __hash__(self):
+        return hash((frozenset(self.lhs), frozenset(self.rhs)))
+
+
+class MVD:
     """Representation of a multivalued dependency.
 
     Definition:
@@ -72,8 +49,21 @@ class MVD(Dependency):
 
     """
 
-    def __init__(self, lhs: set[str], rhs: set[str]):
-        super().__init__(lhs, rhs)
+    def __init__(self, lhs: set[str], rhs: tuple[set[str], set[str]]):
+        """The constructor for a Multivalued dependency.
+
+        Args:
+            lhs (set[str]): The attributes that comprise the left-hand side
+                of the dependency.
+            rhs (set[str]): The attributes that comprise the right-hand side
+                of the dependency.
+        """
+        assert (
+            len(rhs) == 2
+        ), f"RHS of MVD must be == 2 items, got {len(rhs)}, {rhs}"
+
+        self.lhs: set[str] = lhs.copy()
+        self.rhs: tuple[set[str], set[str]] = (rhs[0].copy(), rhs[1].copy())
 
     def __repr__(self) -> str:
         """Representation method for the MVD class.
@@ -81,6 +71,58 @@ class MVD(Dependency):
         Returns:
             str: The string representation of a FD.
         """
-        return f"{self.lhs} ->> " + (
-            " | ".join(self.rhs) if self.rhs else "{}"
+        return (
+            f"{self.lhs} ->> "
+            + (",".join(self.rhs[0]) if self.rhs[0] else "{}")
+            + " | "
+            + (",".join(self.rhs[1]) if self.rhs[1] else "{}")
         )
+
+    def __eq__(self, other):
+        return (
+            self.lhs == other.lhs
+            and self.rhs[0] == other.rhs[0]
+            and self.rhs[1] == other.rhs[1]
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                frozenset(self.lhs),
+                (frozenset(self.rhs[0]), frozenset(self.rhs[1])),
+            )
+        )
+
+
+class NonAtomic:
+    """Representation of a non-atomic attribute"""
+
+    def __init__(self, lhs: set[str], rhs: set[str]):
+        """The constructor for a non-atomic value dependency.
+
+        Args:
+            lhs (set[str]): The attributes that comprise the left-hand side
+                of the dependency.
+            rhs (set[str]): The attributes that comprise the right-hand side
+                of the dependency.
+        """
+        self.lhs: set[str] = lhs.copy()
+        self.rhs: set[str] = rhs.copy()
+
+    def __repr__(self) -> str:
+        """Representation method for the NonAtomic class.
+
+        Returns:
+            str: The string representation of a non-atomic.
+        """
+        return (
+            f"{self.lhs} -> "
+            + (", ".join(self.rhs) if self.rhs else "{}")
+            + " (a non-atomic attribute)"
+        )
+
+    def __eq__(self, other):
+        return self.lhs == other.lhs and self.rhs == other.rhs
+
+    def __hash__(self):
+        return hash((frozenset(self.lhs), frozenset(self.rhs)))

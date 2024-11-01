@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from .fd import FD, MVD
+from .fd import FD, MVD, NonAtomic
 
 
 class Relation:
@@ -13,8 +13,8 @@ class Relation:
         columns (set[str]): The set of all of the column names.
         primary_key (set[str]): The set of all of the primary keys.
         candidate_keys (set[set[str]]): The set of all the candidate keys.
-        non_atomic_columns (set[str]): The set of all of the columns which
-            hold multi-valued or non-atomic data.
+        non_atomic_columns (set[NonAtomic]): The set of all of the columns
+            which hold multi-valued or non-atomic data.
         functional_dependencies (set[FD]): The set of the functional
             dependencies of the relation.
         multivalued_dependencies (set[MV]): The set of the multivalued
@@ -32,7 +32,7 @@ class Relation:
         columns: set[str],
         primary_key: set[str],
         candidate_keys: set[set[str]] = set(),
-        non_atomic_columns: set[str] = set(),
+        non_atomic_columns: set[NonAtomic] = set(),
         functional_dependencies: set[FD] = set(),
         multivalued_dependencies: set[MVD] = set(),
         data_instances: list[dict[str, str]] | pd.DataFrame | None = None,
@@ -46,9 +46,9 @@ class Relation:
                 keys.
             candidate_keys (set[set[str]], optional): The set of all the
                 candidate keys. Defaults to set().
-            non_atomic_columns (set[str], optional): The set of all of the
-                columns which hold multi-valued or non-atomic data. Defaults
-                to set().
+            non_atomic_columns (set[NonAtomic], optional): The set of all of
+                the columns which hold multi-valued or non-atomic data.
+                Defaults to set().
             functional_dependencies (set[FD], optional): The set of the
                 functional dependencies of the relation. Defaults to set().
             multivalued_dependencies (set[MVD], optional): The set of the
@@ -73,10 +73,13 @@ class Relation:
                     attribute in columns
                 ), f"Candidate key {candidate_key}, {attribute} not in columns"
 
-        for column in non_atomic_columns:
-            assert (
-                column in columns
-            ), f"Non-atomic column {column} not in columns"
+        for non_atomic_dependency in non_atomic_columns:
+            for column in (
+                non_atomic_dependency.lhs | non_atomic_dependency.rhs
+            ):
+                assert (
+                    column in columns
+                ), f"Non-atomic column {column} not in columns"
 
         for fd in functional_dependencies:
             for attribute in fd.lhs.union(
@@ -87,8 +90,8 @@ class Relation:
                 ), f"Attribute {attribute} from FD, {fd} not in columns"
 
         for mvd in multivalued_dependencies:
-            for attribute in mvd.lhs.union(
-                mvd.rhs
+            for attribute in (
+                mvd.lhs | mvd.rhs[0] | mvd.rhs[1]
             ):  # Set of all attributes involved in the functional dependency.
                 assert (
                     attribute in columns
@@ -114,7 +117,11 @@ class Relation:
         self.columns: set[str] = columns.copy()
         self.primary_key: set[str] = primary_key.copy()
         self.candidate_keys: set[set[str]] = candidate_keys.copy()
-        self.non_atomic_columns: set[str] = non_atomic_columns.copy()
+        self.non_atomic_columns: set[NonAtomic] = {
+            non_atomic
+            for non_atomic in non_atomic_columns.copy()
+            if non_atomic.lhs or non_atomic.rhs
+        }
         self.functional_dependencies: set[FD] = {
             fd for fd in functional_dependencies.copy() if fd.lhs or fd.rhs
         }
@@ -225,8 +232,25 @@ class Relation:
                 updated_candidate_keys.add(candidate_key)
         self.candidate_keys = updated_candidate_keys
 
-        if attribute in self.non_atomic_columns:
-            self.non_atomic_columns.remove(attribute)
+        # if attribute in self.non_atomic_columns:
+        #     self.non_atomic_columns.remove(attribute)
+        updated_non_atomic_columns = set()
+        for non_atomic in self.non_atomic_columns:
+            if attribute in non_atomic.lhs:
+                continue
+                # Non-atomic dependency would become invalid, do not include
+                # in new non-atomic dependencies.
+            if (
+                attribute in non_atomic.rhs
+            ):  # Set of all attributes involved in the non-atomic dependency.
+                lhs: set[str] = non_atomic.lhs.copy()
+                rhs: set[str] = non_atomic.rhs - {attribute}
+
+                if lhs and rhs and lhs != rhs:
+                    updated_non_atomic_columns.add(NonAtomic(lhs=lhs, rhs=rhs))
+            else:
+                updated_non_atomic_columns.add(non_atomic)
+        self.non_atomic_columns = updated_non_atomic_columns
 
         updated_functional_dependencies = set()
         for fd in self.functional_dependencies:
@@ -247,19 +271,15 @@ class Relation:
         updated_multivalued_dependencies = set()
         for mvd in self.multivalued_dependencies:
             if (
-                attribute in mvd.lhs | mvd.rhs
+                attribute in mvd.lhs | mvd.rhs[0] | mvd.rhs[1]
             ):  # Set of all attributes involved in the multivalued dependency.
-                lhs: set[str] = mvd.lhs - {attribute}
-                rhs: set[str] = mvd.rhs - {attribute}
-
-                if lhs and rhs and lhs != rhs:
-                    updated_multivalued_dependencies.add(MVD(lhs=lhs, rhs=rhs))
+                continue  # MVD becomes invalid
             else:
                 updated_multivalued_dependencies.add(mvd)
         self.multivalued_dependencies = updated_multivalued_dependencies.copy()
 
         if self.data_instances is not None:
-            self.data_instances.drop(attribute, axis=1)
+            self.data_instances = self.data_instances.drop(attribute, axis=1)
 
         self.columns.remove(attribute)
 
@@ -352,6 +372,9 @@ class Relation:
 
         X = mvd.lhs.copy()
         Y, Z = mvd.rhs
+
+        Y = list(Y)
+        Z = list(Z)
 
         for name, group in self.data_instances.groupby(list(X)):
             for i1, t1 in group.iterrows():  # Index 1, Tuple 1

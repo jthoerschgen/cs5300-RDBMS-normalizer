@@ -9,15 +9,15 @@ Textbook: `Fundamentals of Database Systems` (Elmasri, Navathe).
 
 """
 
-from objects.fd import FD, MVD
+from objects.fd import FD, MVD, NonAtomic
 from objects.relation import Relation
 from rdbms_normalizer import (
     normalize_to_1NF,
     normalize_to_2NF,
     normalize_to_3NF,
     normalize_to_4NF,
-    normalize_to_BCNF,
     normalize_to_5NF,
+    normalize_to_BCNF,
 )
 
 """Relations for testing First Normal Form (1NF)"""
@@ -26,7 +26,7 @@ Department = Relation(
     name="DEPARTMENT",
     columns={"Dname", "Dnumber", "Dmgr_ssn", "Dlocations"},
     primary_key={"Dnumber"},
-    non_atomic_columns={"Dlocations"},
+    non_atomic_columns={NonAtomic(lhs={"Dnumber"}, rhs={"Dlocations"})},
     functional_dependencies={
         FD(lhs={"Dnumber"}, rhs={"Dname", "Dmgr_ssn", "Dlocations"}),
     },
@@ -140,7 +140,7 @@ Emp = Relation(
     },
     primary_key={"Ename", "Pname", "Dname"},
     multivalued_dependencies={
-        MVD(lhs={"Ename"}, rhs={"Pname", "Dname"}),
+        MVD(lhs={"Ename"}, rhs=({"Pname"}, {"Dname"})),
     },
     data_instances=[
         {"Ename": "Smith", "Pname": "X", "Dname": "John"},

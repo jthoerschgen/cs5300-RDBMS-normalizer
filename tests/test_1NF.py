@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from objects.fd import NonAtomic
 from objects.relation import Relation
 from rdbms_normalizer import normalize_to_1NF
 
@@ -29,11 +30,26 @@ CoffeeShopData = Relation(
     },
     primary_key={"OrderID", "DrinkID", "FoodID"},
     non_atomic_columns={
-        "PromoCodeUsed",
-        "DrinkIngredient",
-        "DrinkAllergen",
-        "FoodIngredient",
-        "FoodAllergen",
+        NonAtomic(
+            lhs={"OrderID", "DrinkID", "FoodID"},
+            rhs={"PromoCodeUsed"},
+        ),
+        NonAtomic(
+            lhs={"OrderID", "DrinkID", "FoodID"},
+            rhs={"DrinkIngredient"},
+        ),
+        NonAtomic(
+            lhs={"OrderID", "DrinkID", "FoodID"},
+            rhs={"DrinkAllergen"},
+        ),
+        NonAtomic(
+            lhs={"OrderID", "DrinkID", "FoodID"},
+            rhs={"FoodIngredient"},
+        ),
+        NonAtomic(
+            lhs={"OrderID", "DrinkID", "FoodID"},
+            rhs={"FoodAllergen"},
+        ),
     },
     functional_dependencies=set(),
 )

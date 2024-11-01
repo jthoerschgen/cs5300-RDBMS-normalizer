@@ -1,5 +1,19 @@
 # CS 5300 - Programming Project: RDBMS Normalizer
 
+## *Errors in Sample Data* - Corrections
+
+### OrderID -> PromoCodeUsed
+
+- Not 2NF violation, is actually a BCNF violation
+
+### DrinkID -> DrinkName
+
+- corrected, is a PFD violation
+
+### FoodID -> FoodName
+
+- corrected, is a PFD violation
+
 ## Objective
 
 To develop a program that takes a database (relations) and functional dependencies as input, normalizes the relations based on the provided functional dependencies, produces SQL queries to generate the normalized database tables, and optionally determines the highest normal form of the input table.
@@ -13,7 +27,7 @@ To develop a program that takes a database (relations) and functional dependenci
 - This should include the complete set of tables (relations) in the database schema to be normalized. The minimal expected details should include the following:
   - **Table name.**
   - **List of columns** (attributes).
-  - **Key constraints** (all primary keys and any candidate keys --- to be used in the _generalized definitions_ of 2NF, 3NF, and BCNF).
+  - **Key constraints** (all primary keys and any candidate keys --- to be used in the *generalized definitions* of 2NF, 3NF, and BCNF).
   - **Any attributes that hold multi-valued, non-atomic data.**
 - Since normalization is typically done on individual tables, so your program may choose to handle one table input at a time, which is also acceptable.
 
@@ -47,18 +61,18 @@ Upon successfully completing the normalization process, the output of your progr
 1. SQL Queries
     - Provide SQL table definition queries that are ready to execute, which create the normalized tables based on the final schema. These queries should include table creation commands along with appropriate constraints such as primary keys, foreign keys, and any other relevant constraints that were identified during the normalization process.
 2. Normalized Relational Database Schema
-    - Alternatively, you may output a detailed _schema diagram_ or a _textual representation_ of the normalized tables. This should include each table's name, list of attributes, and appropriate constraints such as primary keys, foreign keys, and any other relevant constraints that were identified during the normalization process.
+    - Alternatively, you may output a detailed *schema diagram* or a *textual representation* of the normalized tables. This should include each table's name, list of attributes, and appropriate constraints such as primary keys, foreign keys, and any other relevant constraints that were identified during the normalization process.
 
 ## Core Components
 
-1. _Input Parser:_ To parse the input dataset and functional dependencies.
-2. _Normalizer:_ To normalize the dataset based on functional dependencies.
-3. _Final Relation Generator:_ To generate normalized schema for the database.
+1. *Input Parser:* To parse the input dataset and functional dependencies.
+2. *Normalizer:* To normalize the dataset based on functional dependencies.
+3. *Final Relation Generator:* To generate normalized schema for the database.
 
 ## Deliverables
 
-1. _Source Code:_ Well-commented source code in the language of your choice.
-2. _Code Description:_ Detailed documentation describing the flow, logic, and methodology of the code.
+1. *Source Code:* Well-commented source code in the language of your choice.
+2. *Code Description:* Detailed documentation describing the flow, logic, and methodology of the code.
 
 ## Sample Inputs and Outputs
 
@@ -68,11 +82,11 @@ Upon successfully completing the normalization process, the output of your progr
 
 ## Extra Credit on Automatic Identification of MVDs (Up to 15 Points)
 
-This is an opportunity to earn extra credit by enhancing your program to _autonomously_ identify multi-valued dependencies WITHOUT relying on user-provided MVD data. This would require your program to attempt MVD identification by analyzing the provided data instances only.
+This is an opportunity to earn extra credit by enhancing your program to *autonomously* identify multi-valued dependencies WITHOUT relying on user-provided MVD data. This would require your program to attempt MVD identification by analyzing the provided data instances only.
 
 The amount of extra credit awarded will be based on the innovation of your approach, the complexity and efficiency of the detection method, and the accuracy of your program in identifying true MVDs within the data.
 
-_Your submission should include a comprehensive report discussing the approach, validation tests performed, challenges faced, and any assumptions made during the normalization process._
+*Your submission should include a comprehensive report discussing the approach, validation tests performed, challenges faced, and any assumptions made during the normalization process.*
 
 **Students may request a further extension on this extra credit component.**
 
@@ -84,6 +98,6 @@ Implementing the DKNF is notably challenging and is rarely done in typical datab
 
 Your creative approach and the insights you gain from attempting to tackle this problem will be used to determine the amount of extra credit awarded.
 
-_Your submission should include a comprehensive report discussing the approach, validation tests performed, challenges faced, and any assumptions made during the normalization process._
+*Your submission should include a comprehensive report discussing the approach, validation tests performed, challenges faced, and any assumptions made during the normalization process.*
 
 **Students may request a further extension on this extra credit component.**

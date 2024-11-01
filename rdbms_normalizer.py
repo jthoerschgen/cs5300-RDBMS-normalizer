@@ -6,16 +6,16 @@ CS 5300 - Programming Project - RDBMS Normalizer.
 
 Core Components:
 
-1. Input Parser
-2. Normalizer
-3. Final Relation Generator
+1. Input Parser -> The Relation class.
+2. Normalizer -> This module.
+3. Final Relation Generator -> See: main.py
 
 """
 from itertools import combinations
 
 import pandas as pd
 
-from objects.fd import FD
+from objects.fd import FD, MVD
 from objects.relation import Relation
 
 
@@ -45,20 +45,50 @@ def normalize_to_1NF(relation: Relation) -> list[Relation]:
 
     decomposition: list[Relation] = []
     non_atomic_columns: set[str] = relation.non_atomic_columns.copy()
-    for attribute in non_atomic_columns:
-        columns: set[str] = relation.primary_key.copy()
-        columns.add(attribute)
+    for non_atomic_dependency in non_atomic_columns:
+        decomposition_columns: set[str] = (
+            non_atomic_dependency.lhs | non_atomic_dependency.rhs
+        )
+        decomposition_name: str = (
+            relation.name.rstrip("Data")
+            + "".join(non_atomic_dependency.rhs)
+            + "Data"
+            if relation.name.endswith("Data")
+            else ""
+        )
+        decomposition_fds: set[str] = {
+            FD(lhs=fd.lhs.copy(), rhs=fd.rhs.copy())
+            for fd in relation.functional_dependencies
+            if fd.lhs <= decomposition_columns
+            and fd.rhs <= decomposition_columns
+        }
+        decomposition_mvds: set[str] = {
+            MVD(lhs=mvd.lhs, rhs=mvd.rhs)
+            for mvd in relation.multivalued_dependencies
+            if (
+                mvd.lhs <= decomposition_columns
+                and mvd.rhs[0] | mvd.rhs[1] <= decomposition_columns
+            )
+        }
+
+        # Decompose the Data Instance
+        for attribute in non_atomic_dependency.rhs:
+            decomposition_data_instances = (
+                relation.data_instances[list(decomposition_columns)]
+                .explode(attribute, ignore_index=True)
+                .drop_duplicates()
+                if relation.data_instances is not None
+                else None
+            )
 
         decomposed_relation = Relation(
-            name="",  # TODO: name
-            columns=columns,
-            primary_key=columns,
+            name=decomposition_name,
+            columns=decomposition_columns,
+            primary_key=decomposition_columns,
             # TODO: candidate keys
-            functional_dependencies={
-                fd
-                for fd in relation.functional_dependencies
-                if fd.lhs <= columns and fd.rhs <= columns
-            },
+            functional_dependencies=decomposition_fds,
+            multivalued_dependencies=decomposition_mvds,
+            data_instances=decomposition_data_instances,
         )
         decomposition.append(decomposed_relation)
 
@@ -127,6 +157,9 @@ def normalize_to_2NF(relation: Relation) -> list[Relation]:
                     pfds.add(fd)
                     break
 
+    if not pfds:  # No PFDs -> Already in 2NF
+        return [relation]
+
     decomposition: list[Relation] = []
     for pfd in pfds:
         print(f"PFD: {pfd}")
@@ -134,19 +167,50 @@ def normalize_to_2NF(relation: Relation) -> list[Relation]:
             relation.primary_key
         )
         decomposition_columns: set[str] = pfd.lhs | pfd.rhs
+        decomposition_name: str = (
+            relation.name.rstrip("Data")
+            + "".join(
+                sorted(
+                    list(
+                        attribute.rstrip("ID")
+                        for attribute in decomposition_pk
+                    )
+                )
+            )
+            + "Data"
+            if relation.name.endswith("Data")
+            else ""
+        )  # All in one line!
         decomposition_fds: set[str] = {
             fd
             for fd in relation.functional_dependencies
             if fd.lhs <= decomposition_columns
             and fd.rhs <= decomposition_columns
         }
+        decomposition_mvds: set[str] = {
+            mvd
+            for mvd in relation.multivalued_dependencies
+            if mvd.lhs <= decomposition_columns
+            and mvd.rhs[0] | mvd.rhs[1] <= decomposition_columns
+        }
+
+        # Decompose the Data Instance
+        decomposition_data_instances = (
+            relation.data_instances[
+                list(decomposition_columns)
+            ].drop_duplicates()
+            if relation.data_instances is not None
+            else None
+        )
 
         decomposed_relation = Relation(
-            name="",  # TODO: name
+            name=decomposition_name,
             columns=decomposition_columns,
             primary_key=decomposition_pk,
             # TODO: candidate keys
             functional_dependencies=({pfd} | decomposition_fds),
+            multivalued_dependencies=decomposition_mvds,
+            data_instances=decomposition_data_instances,
         )
         decomposition.append(decomposed_relation)
 
@@ -220,19 +284,53 @@ def normalize_to_3NF(relation: Relation) -> list[Relation]:
         print(f"TFD: {tfd}")
         decomposition_pk: set[str] = tfd.lhs.copy()
         decomposition_columns: set[str] = tfd.lhs | tfd.rhs
+        decomposition_name: str = (
+            relation.name.rstrip("Data")
+            + "".join(
+                sorted(
+                    list(
+                        attribute.rstrip("ID")
+                        for attribute in decomposition_pk
+                    )
+                )
+            )
+            + "Data"
+            if relation.name.endswith("Data")
+            else ""
+        )
         decomposition_fds: set[str] = {
             fd
             for fd in relation.functional_dependencies
             if fd.lhs <= decomposition_columns
             and fd.rhs <= decomposition_columns
         }
+        decomposition_mvds: set[str] = {
+            mvd
+            for mvd in relation.multivalued_dependencies
+            if mvd.lhs <= decomposition_columns
+            and mvd.rhs <= decomposition_columns
+        }
+
+        # Decompose the Data Instance
+        decomposition_data_instances = (
+            relation.data_instances[
+                list(decomposition_columns)
+            ].drop_duplicates()
+            if relation.data_instances is not None
+            else None
+        )
+
+        # if len(decomposition_columns) == 1:
+        #     continue
 
         decomposed_relation = Relation(
-            name="",  # TODO: name
+            name=decomposition_name,
             columns=decomposition_columns,
             primary_key=decomposition_pk,
             # TODO: candidate keys
-            functional_dependencies=({tfd} | decomposition_fds),
+            functional_dependencies=decomposition_fds,
+            multivalued_dependencies=decomposition_mvds,
+            data_instances=decomposition_data_instances,
         )
         decomposition.append(decomposed_relation)
 
@@ -298,20 +396,54 @@ def normalize_to_BCNF(relation: Relation) -> list[Relation]:
         decomposition_columns: set[str] = (
             bcnf_violation.lhs | bcnf_violation.rhs
         )
+        decomposition_name: str = (
+            relation.name.rstrip("Data")
+            + "".join(
+                sorted(
+                    list(
+                        attribute.rstrip("ID")
+                        for attribute in decomposition_pk
+                    )
+                )
+            )
+            + "Data"
+            if relation.name.endswith("Data")
+            else ""
+        )
         decomposition_fds: set[str] = {
             fd
             for fd in relation.functional_dependencies
             if fd.lhs <= decomposition_columns
             and fd.rhs <= decomposition_columns
         }
+        decomposition_mvds: set[str] = {
+            mvd
+            for mvd in relation.multivalued_dependencies
+            if mvd.lhs <= decomposition_columns
+            and mvd.rhs <= decomposition_columns
+        }
+
+        # Decompose the Data Instance
+        decomposition_data_instances = (
+            relation.data_instances[
+                list(decomposition_columns)
+            ].drop_duplicates()
+            if relation.data_instances is not None
+            else None
+        )
+
+        # if len(decomposition_columns) == 1:
+        #     continue
 
         # New relation XA
         decomposed_relation = Relation(
-            name="",  # TODO: name
+            name=decomposition_name,
             columns=decomposition_columns,
             primary_key=decomposition_pk,
             # TODO: candidate keys
-            functional_dependencies=({bcnf_violation} | decomposition_fds),
+            functional_dependencies=decomposition_fds,
+            multivalued_dependencies=decomposition_mvds,
+            data_instances=decomposition_data_instances,
         )
         decomposition.append(decomposed_relation)
 
@@ -382,8 +514,13 @@ def normalize_to_4NF(relation: Relation) -> list[Relation]:
 
     # TODO - Determine MVDs for Extra Credit
 
+    mvds = relation.multivalued_dependencies
+
+    if not mvds:  # No MVDs -> Already in 4NF
+        return [relation]
+
     decomposition: list[Relation] = []
-    for mvd in relation.multivalued_dependencies:
+    for mvd in mvds:
         print(f"MVD: {mvd}")
 
         if not relation.verify_mvd(mvd):
@@ -392,9 +529,30 @@ def normalize_to_4NF(relation: Relation) -> list[Relation]:
         print("\tMVD is valid, decomposing...")
 
         # Decompose the Relation
-        for rhs_attribute in mvd.rhs:
+        for rhs_attribute in mvd.rhs[0] | mvd.rhs[1]:
             decomposition_pk: set[str] = mvd.lhs | {rhs_attribute}
             decomposition_columns: set[str] = mvd.lhs | {rhs_attribute}
+            decomposition_name: str = (
+                (
+                    relation.name.rstrip("Data") + rhs_attribute + "Data"
+                    if relation.name.endswith("Data")
+                    else ""
+                )
+                if rhs_attribute not in relation.name
+                else relation.name
+            )
+            decomposition_fds: set[str] = {
+                fd
+                for fd in relation.functional_dependencies
+                if fd.lhs <= decomposition_columns
+                and fd.rhs <= decomposition_columns
+            }
+            decomposition_mvds: set[str] = {
+                mvd
+                for mvd in relation.multivalued_dependencies
+                if mvd.lhs <= decomposition_columns
+                and mvd.rhs[0] | mvd.rhs[1] <= decomposition_columns
+            }
 
             # Decompose the Data Instance
             decomposition_data_instances = (
@@ -406,12 +564,12 @@ def normalize_to_4NF(relation: Relation) -> list[Relation]:
             )
 
             decomposed_relation = Relation(
-                name="",  # TODO: name
+                name=decomposition_name,
                 columns=decomposition_columns,
                 primary_key=decomposition_pk,
                 # TODO: candidate keys
-                # TODO: functional_dependencies
-                # TODO: multivalued dependencies
+                functional_dependencies=decomposition_fds,
+                multivalued_dependencies=decomposition_mvds,
                 data_instances=(decomposition_data_instances),
             )
             decomposition.append(decomposed_relation)
@@ -579,6 +737,18 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
 
         decomposition_pk: set[str] = set(decomposition_columns)
         decomposition_columns: set[str] = set(decomposition_columns)
+        decomposition_fds: set[str] = {
+            fd
+            for fd in relation.functional_dependencies
+            if fd.lhs <= decomposition_columns
+            and fd.rhs <= decomposition_columns
+        }
+        decomposition_mvds: set[str] = {
+            mvd
+            for mvd in relation.multivalued_dependencies
+            if mvd.lhs <= decomposition_columns
+            and mvd.rhs <= decomposition_columns
+        }
 
         # Decompose the Data Instance
         decomposition_data_instances = (
@@ -594,10 +764,160 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
             columns=decomposition_columns,
             primary_key=decomposition_pk,
             # TODO: candidate keys
-            # TODO: functional_dependencies
-            # TODO: multivalued dependencies
+            functional_dependencies=decomposition_fds,
+            multivalued_dependencies=decomposition_mvds,
             data_instances=decomposition_data_instances,
         )
         decomposition.append(decomposed_relation)
 
     return decomposition
+
+
+def Normalizer(relation_to_normalize: Relation, normalize_to: str):
+
+    if normalize_to not in ("1NF", "2NF", "3NF", "BCNF", "4NF", "5NF"):
+        raise ValueError(f"Invalid Normal Form Selection: {normalize_to}")
+
+    print("ORIGINAL RELATION:")
+    print("-" * 40)
+    print(relation_to_normalize)
+    print()
+    print("#" * 40)
+    print()
+
+    # Normalize to First Normal Form
+    decomposition_1NF: list[Relation] = normalize_to_1NF(
+        relation=relation_to_normalize
+    )
+    if normalize_to == "1NF":
+        print("=" * 40)
+        print("DECOMPOSITION FOR FIRST NORMAL FORM:")
+        print("=" * 40)
+        print()
+        for relation_1NF in decomposition_1NF:
+            print(relation_1NF)
+            print("-" * 40)
+        return decomposition_1NF
+
+    # Normalize to Second Normal Form
+    decomposition_2NF: list[Relation] = list()
+    for relation_1NF in decomposition_1NF:
+        decomposition_2NF.extend(normalize_to_2NF(relation_1NF))
+
+    if normalize_to == "2NF":
+        print("=" * 40)
+        print("DECOMPOSITION FOR SECOND NORMAL FORM:")
+        print("=" * 40)
+        print()
+        for relation_2NF in decomposition_2NF:
+            print(relation_2NF)
+            print("-" * 40)
+        return decomposition_2NF
+
+    # Normalize to Third Normal Form
+    decomposition_3NF: list[Relation] = list()
+    for relation_2NF in decomposition_2NF:
+        decomposition_3NF_chunk = normalize_to_3NF(relation_2NF)
+        for relation_3NF in decomposition_3NF_chunk:
+            novel_relation = True
+            for existing_relation_3NF in decomposition_3NF:
+                if relation_3NF.columns <= existing_relation_3NF.columns:
+                    novel_relation = False
+                    break
+            if novel_relation:
+                # print("Adding", relation_3NF.columns)
+                decomposition_3NF.append(relation_3NF)
+
+    if normalize_to == "3NF":
+        print("=" * 40)
+        print("DECOMPOSITION FOR THIRD NORMAL FORM:")
+        print("=" * 40)
+        print()
+        for relation_3NF in decomposition_3NF:
+            print(relation_3NF)
+            print("-" * 40)
+        return decomposition_3NF
+
+    # Normalize to Boyce-Codd Normal Form
+    decomposition_BCNF: list[Relation] = list()
+    for relation_3NF in decomposition_3NF:
+        decomposition_BCNF_chunk = normalize_to_BCNF(relation_3NF)
+        for relation_BCNF in decomposition_BCNF_chunk:
+            novel_relation = True
+            for existing_relation_BCNF in decomposition_BCNF:
+                if relation_BCNF.columns <= existing_relation_BCNF.columns:
+                    novel_relation = False
+                    break
+            if novel_relation:
+                print("Adding", relation_BCNF.columns)
+                decomposition_BCNF.append(relation_BCNF)
+
+    if normalize_to == "BCNF":
+        print("=" * 40)
+        print("DECOMPOSITION FOR BOYCE-CODD NORMAL FORM:")
+        print("=" * 40)
+        print()
+        for relation_BCNF in decomposition_BCNF:
+            print(relation_BCNF)
+            print("-" * 40)
+        return decomposition_BCNF
+
+    # Normalize to Fourth Normal Form
+    decomposition_4NF: list[Relation] = list()
+    for relation_BCNF in decomposition_BCNF:
+        decomposition_4NF_chunk = normalize_to_4NF(relation_BCNF)
+        for relation_4NF in decomposition_4NF_chunk:
+            novel_relation = True
+            for existing_relation_4NF in decomposition_4NF:
+                if relation_4NF.columns <= existing_relation_4NF.columns:
+                    novel_relation = False
+                    break
+            if novel_relation:
+                print("Adding", relation_4NF.columns)
+                decomposition_4NF.append(relation_4NF)
+
+    # # 4NF - Remove relations already represented by other relations.
+    # for r in decomposition_4NF:
+    #     print(r.columns)
+    #     print()
+    # for i, relation_4NF in enumerate(decomposition_4NF):
+    #     for j, other_relation_4NF in enumerate(decomposition_4NF):
+    #         if i == j:
+    #             continue
+    #         print(
+    #             i,
+    #             j,
+    #             relation_4NF.columns,
+    #             other_relation_4NF.columns,
+    #             relation_4NF.columns <= other_relation_4NF.columns,
+    #         )
+    #         if relation_4NF.columns <= other_relation_4NF.columns:
+    #             # if relation_4NF in decomposition_4NF:
+    #             decomposition_4NF.remove(relation_4NF)
+    #             break
+    #     print()
+
+    if normalize_to == "4NF":
+        print("=" * 40)
+        print("DECOMPOSITION FOR FOURTH NORMAL FORM:")
+        print("=" * 40)
+        print()
+        for relation_4NF in decomposition_4NF:
+            print(relation_4NF)
+            print("-" * 40)
+        return decomposition_4NF
+
+    # Normalize to Fourth Normal Form
+    decomposition_5NF: list[Relation] = list()
+    for relation_4NF in decomposition_4NF:
+        decomposition_5NF.extend(normalize_to_5NF(relation_4NF))
+
+    if normalize_to == "5NF":
+        print("=" * 40)
+        print("DECOMPOSITION FOR FIFTH NORMAL FORM:")
+        print("=" * 40)
+        print()
+        for relation_5NF in decomposition_5NF:
+            print(relation_5NF)
+            print("-" * 40)
+        return decomposition_5NF

@@ -12,7 +12,7 @@ CoffeeShopDrinkIngredientData = Relation(
     multivalued_dependencies={
         MVD(
             lhs={"OrderID", "DrinkID"},
-            rhs={"FoodID", "DrinkIngredient"},
+            rhs=({"FoodID"}, {"DrinkIngredient"}),
         ),
     },
     data_instances=[
@@ -106,7 +106,7 @@ CoffeeShopDrinkAllergenData = Relation(
     multivalued_dependencies={
         MVD(
             lhs={"OrderID", "DrinkID"},
-            rhs={"FoodID", "DrinkAllergen"},
+            rhs=({"FoodID"}, {"DrinkAllergen"}),
         ),
     },
     data_instances=[
@@ -156,8 +156,8 @@ CoffeeShopFoodIngredientData = Relation(
     functional_dependencies=set(),
     multivalued_dependencies={
         MVD(
-            lhs={"OrderID", "DrinkID"},
-            rhs={"FoodID", "FoodIngredient"},
+            lhs={"OrderID", "FoodID"},
+            rhs=({"DrinkID"}, {"FoodIngredient"}),
         ),
     },
     data_instances=[
@@ -231,8 +231,8 @@ CoffeeShopFoodAllergenData = Relation(
     functional_dependencies=set(),
     multivalued_dependencies={
         MVD(
-            lhs={"OrderID", "DrinkID"},
-            rhs={"FoodID", "FoodAllergen"},
+            lhs={"OrderID", "FoodID"},
+            rhs=({"DrinkID"}, {"FoodAllergen"}),
         ),
     },
     data_instances=[
