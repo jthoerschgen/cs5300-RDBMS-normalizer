@@ -731,6 +731,7 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
     }
     print(decomposition_columns)
 
+    relation_number: int = 1
     decomposition: list[Relation] = []
     for decomposition_columns in decomposition_columns.pop():
         # Construct the Decomposition
@@ -760,7 +761,7 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
         )
 
         decomposed_relation = Relation(
-            name="",  # TODO: name
+            name=f"R{relation_number}",
             columns=decomposition_columns,
             primary_key=decomposition_pk,
             # TODO: candidate keys
@@ -768,6 +769,7 @@ def normalize_to_5NF(relation: Relation) -> list[Relation]:
             multivalued_dependencies=decomposition_mvds,
             data_instances=decomposition_data_instances,
         )
+        relation_number += 1
         decomposition.append(decomposed_relation)
 
     return decomposition
