@@ -876,26 +876,26 @@ def Normalizer(relation_to_normalize: Relation, normalize_to: str):
                 print("Adding", relation_4NF.columns)
                 decomposition_4NF.append(relation_4NF)
 
-    # # 4NF - Remove relations already represented by other relations.
-    # for r in decomposition_4NF:
-    #     print(r.columns)
-    #     print()
-    # for i, relation_4NF in enumerate(decomposition_4NF):
-    #     for j, other_relation_4NF in enumerate(decomposition_4NF):
-    #         if i == j:
-    #             continue
-    #         print(
-    #             i,
-    #             j,
-    #             relation_4NF.columns,
-    #             other_relation_4NF.columns,
-    #             relation_4NF.columns <= other_relation_4NF.columns,
-    #         )
-    #         if relation_4NF.columns <= other_relation_4NF.columns:
-    #             # if relation_4NF in decomposition_4NF:
-    #             decomposition_4NF.remove(relation_4NF)
-    #             break
-    #     print()
+    # 4NF - Remove relations already represented by other relations.
+    for r in decomposition_4NF:
+        print(r.columns)
+        print()
+    for i, relation_4NF in enumerate(decomposition_4NF):
+        for j, other_relation_4NF in enumerate(decomposition_4NF):
+            if i == j:
+                continue
+            print(
+                i,
+                j,
+                relation_4NF.columns,
+                other_relation_4NF.columns,
+                relation_4NF.columns <= other_relation_4NF.columns,
+            )
+            if relation_4NF.columns <= other_relation_4NF.columns:
+                # if relation_4NF in decomposition_4NF:
+                decomposition_4NF.remove(relation_4NF)
+                break
+        print()
 
     if normalize_to == "4NF":
         print("=" * 40)

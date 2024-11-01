@@ -281,21 +281,37 @@ CoffeeShopDataStandard = Relation(
             lhs={"OrderID"},
             rhs=({"DrinkID", "FoodID"}, {"PromoCodeUsed"}),
         ),
+        # MVD(
+        #     lhs={"OrderID", "DrinkID"},
+        #     rhs=({"FoodID"}, {"DrinkIngredient"}),
+        # ),
+        # MVD(
+        #     lhs={"OrderID", "DrinkID"},
+        #     rhs=({"FoodID"}, {"DrinkAllergen"}),
+        # ),
+        # MVD(
+        #     lhs={"OrderID", "FoodID"},
+        #     rhs=({"DrinkID"}, {"FoodIngredient"}),
+        # ),
+        # MVD(
+        #     lhs={"OrderID", "FoodID"},
+        #     rhs=({"DrinkID"}, {"FoodAllergen"}),
+        # ),
         MVD(
-            lhs={"OrderID", "DrinkID"},
-            rhs=({"FoodID"}, {"DrinkIngredient"}),
+            lhs={"DrinkID"},
+            rhs=({"OrderID"}, {"DrinkIngredient"}),
         ),
         MVD(
-            lhs={"OrderID", "DrinkID"},
-            rhs=({"FoodID"}, {"DrinkAllergen"}),
+            lhs={"DrinkID"},
+            rhs=({"OrderID"}, {"DrinkAllergen"}),
         ),
         MVD(
-            lhs={"OrderID", "FoodID"},
-            rhs=({"DrinkID"}, {"FoodIngredient"}),
+            lhs={"FoodID"},
+            rhs=({"OrderID"}, {"FoodIngredient"}),
         ),
         MVD(
-            lhs={"OrderID", "FoodID"},
-            rhs=({"DrinkID"}, {"FoodAllergen"}),
+            lhs={"FoodID"},
+            rhs=({"OrderID"}, {"FoodAllergen"}),
         ),
     },
     data_instances=[

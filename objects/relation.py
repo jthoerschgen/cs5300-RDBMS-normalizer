@@ -364,9 +364,9 @@ class Relation:
             -   **Z is shorthand for the attributes in R after the attributes
                 in (X U Y) are removed from R.
         """
-        # assert (
-        #     mvd.lhs | mvd.rhs
-        # ) in self.columns, "Attributes in MVD not in columns."
+        assert (
+            mvd.lhs | mvd.rhs[0] | mvd.rhs[1]
+        ) <= self.columns, f"Attributes in MVD not in columns: {self.columns}"
 
         print(f"MVD: {mvd}")
 
@@ -376,7 +376,7 @@ class Relation:
         Y = list(Y)
         Z = list(Z)
 
-        for name, group in self.data_instances.groupby(list(X)):
+        for _, group in self.data_instances.groupby(list(X)):
             for i1, t1 in group.iterrows():  # Index 1, Tuple 1
                 for i2, t2 in group.iterrows():  # Index 2, Tuple 2
                     if i1 == i2:
