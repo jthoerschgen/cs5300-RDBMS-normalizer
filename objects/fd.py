@@ -21,10 +21,12 @@ class FD:
         """
         return f"{self.lhs} -> " + (", ".join(self.rhs) if self.rhs else "{}")
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FD):
+            return False
         return self.lhs == other.lhs and self.rhs == other.rhs
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((frozenset(self.lhs), frozenset(self.rhs)))
 
 
@@ -78,14 +80,16 @@ class MVD:
             + (",".join(self.rhs[1]) if self.rhs[1] else "{}")
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MVD):
+            return False
         return (
             self.lhs == other.lhs
             and self.rhs[0] == other.rhs[0]
             and self.rhs[1] == other.rhs[1]
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(
             (
                 frozenset(self.lhs),
@@ -121,8 +125,10 @@ class NonAtomic:
             + " (a non-atomic attribute)"
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, NonAtomic):
+            return False
         return self.lhs == other.lhs and self.rhs == other.rhs
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((frozenset(self.lhs), frozenset(self.rhs)))

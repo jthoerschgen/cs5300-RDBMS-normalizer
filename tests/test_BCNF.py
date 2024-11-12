@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from objects.fd import FD
 from objects.relation import Relation
 from rdbms_normalizer import normalize_to_BCNF
@@ -15,7 +13,7 @@ Teach = Relation(
 )
 
 
-def test_BCNF():
+def test_BCNF() -> None:
     # BCNF
     for relation in (Teach,):
         print("~=" * 20)

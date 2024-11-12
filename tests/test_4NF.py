@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from objects.fd import MVD
 from objects.relation import Relation
 from rdbms_normalizer import normalize_to_4NF
@@ -276,7 +274,7 @@ CoffeeShopFoodAllergenData = Relation(
 )
 
 
-def test_4NF():
+def test_4NF() -> None:
     # 4NF
     for relation in (
         CoffeeShopDrinkIngredientData,

@@ -88,6 +88,8 @@ Upon successfully completing the normalization process, the output of your progr
 
 ## Extra Credit on Automatic Identification of MVDs (Up to 15 Points)
 
+### DONE - See `determine_mvds_EXTRA_CREDIT.py`
+
 This is an opportunity to earn extra credit by enhancing your program to *autonomously* identify multi-valued dependencies WITHOUT relying on user-provided MVD data. This would require your program to attempt MVD identification by analyzing the provided data instances only.
 
 The amount of extra credit awarded will be based on the innovation of your approach, the complexity and efficiency of the detection method, and the accuracy of your program in identifying true MVDs within the data.

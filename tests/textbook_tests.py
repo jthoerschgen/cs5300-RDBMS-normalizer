@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """textbook_tests.py
 
 Test the different normalization functions on examples from the textbook and
@@ -108,7 +106,8 @@ Emp_no_MVDs_provided = Relation(
         "Dname",
     },
     primary_key={"Ename", "Pname", "Dname"},
-    multivalued_dependencies={},  #  MVD(lhs={"Ename"}, rhs={"Pname", "Dname"})
+    multivalued_dependencies=set(),
+    # MVD(lhs={"Ename"},rhs={"Pname", "Dname"})
     data_instances=[
         {"Ename": "Smith", "Pname": "X", "Dname": "John"},
         {"Ename": "Smith", "Pname": "Y", "Dname": "Anna"},
@@ -180,7 +179,7 @@ Supply = Relation(
 )  # Figure 14.15, Page 492
 
 
-def run_tests():
+def run_tests() -> None:
     # 1NF
     print("~=" * 20)
     print("TESTING FIRST NORMAL FORM")

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from objects.fd import FD
 from objects.relation import Relation
 from rdbms_normalizer import normalize_to_2NF
@@ -72,7 +70,7 @@ CoffeeShopData = Relation(
 )  # Not in 2NF
 
 
-def test_2NF():
+def test_2NF() -> None:
     # 2NF
     for relation in (
         CoffeeShopPromocodeUsedData,

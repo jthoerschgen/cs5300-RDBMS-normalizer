@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from objects.fd import FD
 from objects.relation import Relation
 from rdbms_normalizer import normalize_to_5NF
@@ -76,7 +74,7 @@ CoffeeShopOrderSummaryData = Relation(
 )  # Not a 5NF violation, for unit testing.
 
 
-def test_5NF():
+def test_5NF() -> None:
     # 5NF
     for relation in (CoffeeShopDrinksOrderData, CoffeeShopOrderSummaryData):
         print("~=" * 20)
@@ -91,7 +89,9 @@ def test_5NF():
         print()
         print("DECOMPOSITION FOR FIFTH NORMAL FORM:")
         print()
-        for decomposed_relation in normalize_to_5NF(relation):
+        for decomposed_relation in normalize_to_5NF(
+            relation, select_decomposition=True
+        ):
             print()
             print(decomposed_relation)
             print(".." * 20)

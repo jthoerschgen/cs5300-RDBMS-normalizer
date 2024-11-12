@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from objects.fd import NonAtomic
 from objects.relation import Relation
 from rdbms_normalizer import normalize_to_1NF
@@ -55,7 +53,7 @@ CoffeeShopData = Relation(
 )
 
 
-def test_1NF():
+def test_1NF() -> None:
     # 1NF
     for relation in (CoffeeShopData,):
         print("~=" * 20)

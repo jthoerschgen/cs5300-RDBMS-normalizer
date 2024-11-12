@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from objects.fd import FD
 from objects.relation import Relation
 from rdbms_normalizer import normalize_to_3NF
@@ -66,7 +64,7 @@ CoffeeShopFoodOrderData = Relation(
 )
 
 
-def test_3NF():
+def test_3NF() -> None:
     # 3NF
     for relation in (
         CoffeeShopOrderSummaryData,

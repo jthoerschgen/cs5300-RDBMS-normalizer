@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from objects.fd import FD, MVD, NonAtomic
 from objects.relation import Relation
 from rdbms_normalizer import Normalizer
@@ -411,12 +409,24 @@ CoffeeShopDataStandard = Relation(
     ],
 )
 
+CoffeeShop5NFViolation = Relation(
+    name="CoffeeShopDrinksOrderData",
+    columns={"OrderID", "CustomerID", "DrinkID", "Milk"},
+    primary_key={"OrderID", "CustomerID", "DrinkID", "Milk"},
+    data_instances=[
+        {"OrderID": "1001", "CustomerID": "1", "DrinkID": "1", "Milk": "ND"},
+        {"OrderID": "1001", "CustomerID": "1", "DrinkID": "1", "Milk": "D"},
+        {"OrderID": "1002", "CustomerID": "1", "DrinkID": "2", "Milk": "D"},
+        {"OrderID": "1003", "CustomerID": "2", "DrinkID": "3", "Milk": "ND"},
+        {"OrderID": "1003", "CustomerID": "2", "DrinkID": "3", "Milk": "D"},
+        {"OrderID": "1003", "CustomerID": "2", "DrinkID": "4", "Milk": "ND"},
+    ],
+)  # Join Dependency: (R = R1(DrinkID, Milk) * R2(OrderID, CustomerID, DrinkID)
 
-def main() -> list[Relation]:
+
+def main() -> None:
     normalize_to: str = input("Desired Normal Form: ")
     Normalizer(CoffeeShopDataStandard, normalize_to)
-
-    return 0
 
 
 if __name__ == "__main__":

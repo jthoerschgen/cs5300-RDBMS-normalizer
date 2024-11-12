@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+from itertools import combinations
 
 import pandas as pd
 
@@ -137,7 +137,11 @@ class Relation:
         )
 
     def _repr_attribute_list(
-        self, attribute: set, attribute_title: str
+        self,
+        attribute: (
+            set[str] | set[set[str]] | set[NonAtomic] | set[FD] | set[MVD]
+        ),
+        attribute_title: str,
     ) -> str:
         """Private method for representing an attribute which is a set as a
         string.
@@ -152,12 +156,12 @@ class Relation:
         attributes_info: list[str] = []
         for item in attribute:
             attributes_info.append(f"\t\t{item},")
-        attributes_info = "\n".join(attributes_info)
+        attributes_info_str: str = "\n".join(attributes_info)
         return (
             f"{attribute_title}: "
             + "{"
             + (
-                "\n" + f"{attributes_info}" + "\n\t}"
+                "\n" + f"{attributes_info_str}" + "\n\t}"
                 if len(attributes_info) > 0
                 else "\t}"
             )
@@ -259,8 +263,8 @@ class Relation:
             if (
                 attribute in fd.rhs
             ):  # Set of all attributes involved in the functional dependency.
-                lhs: set[str] = fd.lhs.copy()
-                rhs: set[str] = fd.rhs - {attribute}
+                lhs = fd.lhs.copy()
+                rhs = fd.rhs - {attribute}
 
                 if lhs and rhs and lhs != rhs:
                     updated_functional_dependencies.add(FD(lhs=lhs, rhs=rhs))
@@ -299,7 +303,8 @@ class Relation:
             of dependencies that is equivalent to F.
 
         3.  We cannot remove any dependency from F and still have a set of
-            dependencies that is equivalent to F."""
+            dependencies that is equivalent to F.
+        """
 
         # Satisfy Step 1
         minimal_functional_dependencies: set[FD] = set()
@@ -368,36 +373,87 @@ class Relation:
             mvd.lhs | mvd.rhs[0] | mvd.rhs[1]
         ) <= self.columns, f"Attributes in MVD not in columns: {self.columns}"
 
-        X = mvd.lhs.copy()
-        Y, Z = mvd.rhs
+        X, Y, Z = mvd.lhs, mvd.rhs[0], mvd.rhs[1]
 
-        Y = list(Y)
-        Z = list(Z)
+        if (
+            self.primary_key <= X
+            or self.primary_key <= Y
+            or self.primary_key <= Z
+        ):  # The primary key is a subset of any X, Y, or Z
+            return False
 
-        for _, group in self.data_instances.groupby(list(X)):
+        X_cols, Y_cols, Z_cols = list(X), list(Y), list(Z)
+
+        for _, group in self.data_instances.groupby(list(X_cols)):
+            if len(group) <= 1:
+                continue
+
             for i1, t1 in group.iterrows():  # Index 1, Tuple 1
                 for i2, t2 in group.iterrows():  # Index 2, Tuple 2
                     if i1 == i2:
                         continue
-                    y1 = t1[Y]
-                    z1 = t1[Z]
 
-                    y2 = t2[Y]
-                    z2 = t2[Z]
+                    y1 = tuple(t1[Y_cols])
+                    z1 = tuple(t1[Z_cols])
 
-                    # Check for t3
-                    possible_t3s = group[(group[Y] == y1) & (group[Z] == z2)]
+                    y2 = tuple(t2[Y_cols])
+                    z2 = tuple(t2[Z_cols])
 
-                    # Check for t4
-                    possible_t4s = group[(group[Y] == y2) & (group[Z] == z1)]
+                    if (
+                        y1 == y2 and z1 == z2
+                    ):  # t1 and t2 have the same values, skip
+                        continue
 
-                    exists_t3 = not possible_t3s.empty
-                    exists_t4 = not possible_t4s.empty
+                    # t3: should have X=t1[X], Y=t1[Y], Z=t2[Z]
+                    has_t3 = (
+                        (group[Y_cols].apply(tuple, axis=1) == y1)
+                        & (group[Z_cols].apply(tuple, axis=1) == z2)
+                    ).any()
 
-                    if not (exists_t3 and exists_t4):
+                    # t4: should have X=t1[X], Y=t2[Y], Z=t1[Z]
+                    has_t4 = (
+                        (group[Y_cols].apply(tuple, axis=1) == y2)
+                        & (group[Z_cols].apply(tuple, axis=1) == z1)
+                    ).any()
+
+                    if not (has_t3 or has_t4):
                         return False
         return True
 
     def determine_mvds(self) -> set[MVD]:
-        """TODO EXTRA CREDIT"""
-        raise NotImplementedError("EXTRA CREDIT")
+        """EXTRA CREDIT
+
+        Calculates a list of possible multivalued dependencies from the set of
+        columns. Then verifies each possible multivalued dependency and returns
+        the set of all valid multivalued dependencies.
+        """
+        # Get every combination of attributes
+        column_combinations = list()
+        columns_list = list(self.columns)
+        for i in range(1, len(columns_list) + 1):
+            for combination in combinations(columns_list, i):
+                column_combinations.append(set(combination))
+
+        possible_mvds: list[MVD] = list()
+        for X in column_combinations:
+            remaining_columns: set[str] = self.columns - X
+            for i in range(1, len(remaining_columns)):
+                for Y_list in combinations(remaining_columns, i):
+                    Y = {Y_list[0]}
+                    Z = remaining_columns - Y
+
+                    potential_mvd = MVD(
+                        lhs=X, rhs=(Y, Z) if sorted(Y) < sorted(Z) else (Z, Y)
+                    )  # Sort RHS to avoid duplicate MVDs
+
+                    if potential_mvd not in possible_mvds:
+                        # self.multivalued_dependencies.add(potential_mvd)
+                        possible_mvds.append(potential_mvd)
+
+        verified_mvds: set[MVD] = set()
+        for mvd in possible_mvds:
+            verified = self.verify_mvd(mvd)
+            if verified:
+                verified_mvds.add(mvd)
+
+        return verified_mvds
